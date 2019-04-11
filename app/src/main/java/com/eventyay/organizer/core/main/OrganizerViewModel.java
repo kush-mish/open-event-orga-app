@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.eventyay.organizer.utils.ErrorUtils;
 import com.f2prateek.rx.preferences2.RxSharedPreferences;
 
 import com.eventyay.organizer.common.Constants;
@@ -44,7 +45,8 @@ public class OrganizerViewModel extends ViewModel {
         if (organizer.getValue() == null) {
             compositeDisposable.add(userRepository
                 .getOrganizer(false)
-                .subscribe(organizer::setValue, Logger::logError));
+                .subscribe(organizer::setValue,
+                    throwable -> error.setValue(ErrorUtils.getMessage(throwable).toString())));
         }
         return organizer;
     }
@@ -54,7 +56,8 @@ public class OrganizerViewModel extends ViewModel {
             .asObservable()
             .distinctUntilChanged()
             .doOnNext(changed -> localDatePreferenceAction.call())
-            .subscribe(DateUtils::setShowLocal));
+            .subscribe(DateUtils::setShowLocal,
+                throwable -> error.setValue(ErrorUtils.getMessage(throwable).toString())));
     }
 
     public void logout() {
@@ -62,10 +65,7 @@ public class OrganizerViewModel extends ViewModel {
             .subscribe(() -> {
                 contextManager.clearOrganiser();
                 logoutAction.call();
-            }, throwable -> {
-                error.setValue(throwable.getMessage());
-                Logger.logError(throwable);
-            }));
+            }, throwable -> error.setValue(ErrorUtils.getMessage(throwable).toString())));
     }
 
     protected LiveData<String> getError() {
